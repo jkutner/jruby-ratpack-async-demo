@@ -68,14 +68,14 @@ RatpackServer.start do |b|
         uri = java.net.URI.new(rest_url(item))
         http_client = ctx.get(HttpClient.java_class)
         http_client.get(uri).then do |response|
-          JSON.parse(response.get_body.get_text)["Item"]
+          results << JSON.parse(response.get_body.get_text)["Item"]
         end
       end
 
       initial = System.nano_time - start
 
-      Promise.value(results.to_a.flatten).then do |results|
-        thumbs = generate_thumbs(results)
+      Promise.value(results).then do |results|
+        thumbs = generate_thumbs(results.to_a.flatten)
         ctx.get_response.get_headers.set("Content-Type", "text/html")
 
         now = System.nano_time
