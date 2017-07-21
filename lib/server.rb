@@ -10,6 +10,7 @@ java_import 'ratpack.server.RatpackServer'
 java_import 'ratpack.server.BaseDir'
 java_import 'ratpack.http.client.HttpClient'
 java_import 'ratpack.exec.util.ParallelBatch'
+java_import 'ratpack.exec.Promise'
 java_import 'java.util.Collections'
 java_import 'java.lang.System'
 
@@ -56,6 +57,45 @@ RatpackServer.start do |b|
   b.handlers do |chain|
     chain.get do |ctx|
       ctx.redirect('/index.html')
+    end
+
+    chain.get("serial") do |ctx|
+      start = System.nano_time
+
+      items = ctx.get_request.get_query_params["items"]
+      results = Collections.synchronizedList([])
+      items.split(",").each do |item|
+        uri = java.net.URI.new(rest_url(item))
+        http_client = ctx.get(HttpClient.java_class)
+        http_client.get(uri).then do |response|
+          JSON.parse(response.get_body.get_text)["Item"]
+        end
+      end
+
+      initial = System.nano_time - start
+
+      Promise.value(results.to_a.flatten).then do |results|
+        thumbs = generate_thumbs(results)
+        ctx.get_response.get_headers.set("Content-Type", "text/html")
+
+        now = System.nano_time
+        total = now - start
+        thread = initial
+
+        ctx.render("<html><head>" +
+          STYLE +
+          "</head><body><small>" +
+          "<b>Serial Async: #{items}</b><br/>" +
+          "Total Time: #{ms(total)}ms<br/>" +
+          "Thread held (<span class='red'>red</span>): #{ms(thread)}ms<br/>" +
+          "Async wait (<span class='green'>green</span>): #{ms(total-thread)}ms<br/>" +
+          "<img border='0px' src='images/red.png' height='20px' width='#{width(initial)}px'>" +
+          "<img border='0px' src='images/green.png' height='20px' width='#{width(total-thread)}px'>" +
+          "<hr />" +
+          thumbs +
+          "</small>" +
+          "</body></html>")
+      end
     end
 
     chain.get("async") do |ctx|
