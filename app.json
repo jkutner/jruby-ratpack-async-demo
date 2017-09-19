@@ -1,0 +1,11 @@
+{
+  "name": "Ratpack JRuby Example",
+  "description": "A an application that demonstrats async IO with Ratpack and JRuby",
+  "repository": "https://github.com/jkutner/jruby-ratpack-async-demo",
+  "keywords": ["jruby", "ratpack" ],
+  "env": {
+    "EBAY_APP_ID": {
+      "description": "Your App ID key for the eBay API. You can create one at https://go.developer.ebay.com"
+    }
+  }
+}
